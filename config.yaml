@@ -185,11 +185,11 @@
             - addr: "udpme://120.53.53.53:853"
               enable_pipeline: true
 
-      - tag: forward_dns_pub
+      - tag: forward_dnspod_doh
         type: fast_forward
         args:
           upstream:
-            - addr: "tcp://1.12.12.12"
+            - addr: "https://120.53.53.53/dns-query"
               enable_pipeline: true
 
       - tag: forward_tencentcloud
@@ -250,7 +250,7 @@
             - hosts
             - ecs_auto
             - cache
-            
+
             - if: qtype65
               exec:
               - black_hole
@@ -263,7 +263,7 @@
 
             - if: query_is_ptr
               exec:
-                - forward_dns_pub
+                - forward_dnspod_doh
                 - _return
 
             - if: query_is_tw_domain
