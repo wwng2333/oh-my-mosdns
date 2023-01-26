@@ -134,12 +134,6 @@
           domain:
             - "provider:cdncn"
 
-      - tag: query_is_ad_domain
-        type: query_matcher
-        args:
-          domain:
-            - "provider:adlist"
-
       - tag: query_is_cn_domain
         type: query_matcher
         args:
@@ -171,13 +165,20 @@
             - addr: "tcp://rdns1.ultradns.net"
             - addr: "tcp://rdns2.ultradns.net"
 
-      - tag: forward_alidns
+      - tag: forward_alidns_dot
         type: fast_forward
         args:
           upstream:
             - addr: "tls://223.6.6.6:853"
               enable_pipeline: true
               
+      - tag: forward_alidns_doh
+        type: fast_forward
+        args:
+          upstream:
+            - addr: "https://223.6.6.6/dns-query"
+              enable_pipeline: true
+
       - tag: forward_dnspod
         type: fast_forward
         args:
@@ -272,11 +273,6 @@
                 - forward_moedns
                 - ttl_long
                 - _return
-
-            - if: query_is_ad_domain
-              exec:
-              - _new_empty_response
-              - _return
 
             - if: "(query_is_local_domain) || (query_is_cdn_cn_domain) || (response_cname_akamai)"
               exec:
