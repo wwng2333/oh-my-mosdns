@@ -2,6 +2,9 @@
 log:
   level: info
 
+api:
+  http: "0.0.0.0:9080"
+  
 plugins:
   - tag: cache
     type: cache
@@ -22,3 +25,4 @@ plugins:
     args:
       entry: main
       listen: 127.0.0.1:5533
+      
