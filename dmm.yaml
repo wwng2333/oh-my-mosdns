@@ -1,3 +1,4 @@
+# version: mosdns v5.0
 log:
   level: info
 
