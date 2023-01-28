@@ -1,0 +1,23 @@
+log:
+  level: info
+
+plugins:
+  - tag: cache
+    type: cache
+    args:
+      size: 10240
+      lazy_cache_ttl: 86400
+      dump_file: ./cache.dump
+      dump_interval: 600
+  - tag: main
+    type: sequence
+    args:
+      - matches:
+          - qname &./dmm.txt
+        exec: forward tcp://20.187.112.20
+      - exec: forward https://8.8.8.8/dns-query
+
+  - type: udp_server
+    args:
+      entry: main
+      listen: 127.0.0.1:5533
