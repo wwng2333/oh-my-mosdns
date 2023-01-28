@@ -1,6 +1,10 @@
-# version: mosdns v5.0
 log:
   level: info
+
+data_providers:
+  - tag: dmm
+    file: ./dmm.txt
+    auto_reload: true
 
 api:
   http: "0.0.0.0:9080"
@@ -11,18 +15,44 @@ plugins:
     args:
       size: 10240
       lazy_cache_ttl: 86400
-      dump_file: ./cache.dump
-      dump_interval: 600
-  - tag: main
-    type: sequence
-    args:
-      - matches:
-          - qname &./dmm.txt
-        exec: forward tcp://20.187.112.20
-      - exec: forward https://8.8.8.8/dns-query
+      lazy_cache_reply_ttl: 30
+      cache_everything: true
 
-  - type: udp_server
+  - tag: query_is_dmm
+    type: query_matcher
     args:
-      entry: main
-      listen: 127.0.0.1:5533
+      domain:
+        - "provider:dmm"
+
+  - tag: forward_nfdnstop
+    type: fast_forward
+    args:
+      upstream:
+        - addr: "tcp://20.187.112.20"
+
+  - tag: forward_google
+    type: fast_forward
+    args:
+      upstream:
+        - addr: "udp://8.8.8.8"
+
+  - tag: main_sequence
+    type: sequence
+    args: 
+      exec:
+        - cache
+        - if: query_is_dmm
+          exec:
+            - forward_nfdnstop
+            - _return
+        - forward_google
+
+servers:
+  - exec: main_sequence
+    timeout: 5
+    listeners:
+      - protocol: udp
+        addr: "127.0.0.1:5533"
+      - protocol: tcp
+        addr: "127.0.0.1:5533"
       
