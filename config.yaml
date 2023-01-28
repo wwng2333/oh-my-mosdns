@@ -235,13 +235,12 @@
             - "223.6.6.6"
           timeout: 2
           
-      - tag: forward_apad_dns
+      - tag: forward_fiftythree
         type: forward
         args:
           upstream:
-            - addr: "https://hk-hkg.moedns.dev/dns-hk"
-          bootstrap:
-            - "223.6.6.6"
+            - addr: "https://1.15.50.48/verse"
+            - addr: "https://106.52.218.142/verse"
           timeout: 2
 
       - tag: main_sequence
@@ -264,13 +263,13 @@
 
             - if: query_is_ptr
               exec:
-                - forward_dnspod_doh
+                - black_hole
                 - _return
 
             - if: query_is_tw_domain
               exec:
                 - ecs_tw
-                - forward_moedns
+                - forward_fiftythree
                 - ttl_long
                 - _return
 
@@ -283,13 +282,13 @@
               exec:
                 - _prefer_ipv4
                 - ecs_cn
-                - forward_moedns
+                - forward_fiftythree
                 - _return
 
             - primary:
                 - _prefer_ipv4
                 - ecs_global
-                - forward_moedns
+                - forward_fiftythree
                 - ttl_short
                 - if: "(response_has_local_ip) || (response_cname_akamai)"
                   exec:
