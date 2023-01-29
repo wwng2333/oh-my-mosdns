@@ -14,6 +14,7 @@ plugins:
     type: cache
     args:
       size: 10240
+      redis: 'redis://127.0.0.1:6379/0'
       lazy_cache_ttl: 86400
       lazy_cache_reply_ttl: 30
       cache_everything: true
