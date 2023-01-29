@@ -296,12 +296,12 @@
 
               secondary:
                 - ecs_auto
-                - forward_tencentcloud
+                - forward_moedns
                 - if: "(! response_has_local_ip) && [_response_valid_answer] || (response_has_gfw_ip)"
                   exec:
                     - _prefer_ipv4
                     - ecs_cn
-                    - forward_ultradns
+                    - forward_moedns
                     - ttl_long
               fast_fallback: 600
               always_standby: false
