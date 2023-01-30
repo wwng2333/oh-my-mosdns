@@ -1,14 +1,33 @@
 log:
+  file: ./mosdns.log
   level: info
 data_providers:
   - tag: chinalist
     file: ./rules/china_domain_list.txt
     auto_reload: true
+  - tag: gfwlist
+    file: ./rules/gfw_domain_list.txt
+    auto_reload: true
   - tag: cdncn
     file: ./rules/cdn_domain_list.txt
     auto_reload: true
+  - tag: chinaip
+    file: ./rules/china_ip_list.txt
+    auto_reload: true
+  - tag: gfwip
+    file: ./rules/gfw_ip_list.txt
+    auto_reload: true
+  - tag: adlist
+    file: ./rules/ad_domain_list.txt
+    auto_reload: true
   - tag: ecscn
     file: ./ecs_cn_domain.txt
+    auto_reload: true
+  - tag: ecstw
+    file: ./ecs_tw_domain.txt
+    auto_reload: true
+  - tag: hosts
+    file: ./hosts.txt
     auto_reload: true
 plugins:
   - tag: cache
@@ -19,34 +38,154 @@ plugins:
       lazy_cache_ttl: 86400
       lazy_cache_reply_ttl: 30
       cache_everything: true
-  - tag: query_is_cn_domain
-    type: query_matcher
+  - tag: hosts
+    type: hosts
     args:
-      domain:
-        - 'provider:chinalist'
-        - 'provider:cdncn'
-        - 'provider:ecscn'
+      hosts:
+        - 'provider:hosts'
+  - tag: ecs_auto
+    type: ecs
+    args:
+      auto: true
+      mask4: 24
+      force_overwrite: false
+  - tag: ecs_global
+    type: ecs
+    args:
+      auto: true
+      mask4: 22
+      force_overwrite: false
+  - tag: ecs_cn
+    type: ecs
+    args:
+      auto: false
+      ipv4: 218.4.4.4
+      ipv6: '240e:3a0:4c0d::1'
+      mask4: 24
+      force_overwrite: true
+  - tag: ecs_tw
+    type: ecs
+    args:
+      auto: false
+      ipv4: 168.95.1.0
+      ipv6: '2001:b000:168::1'
+      mask4: 22
+      force_overwrite: true
+  - tag: ttl_short
+    type: ttl
+    args:
+      minimal_ttl: 60
+      maximum_ttl: 3600
+  - tag: ttl_long
+    type: ttl
+    args:
+      minimal_ttl: 300
+      maximum_ttl: 3600
   - tag: query_is_ptr
     type: query_matcher
     args:
       qtype:
         - 12
+  - tag: qtype65
+    type: query_matcher
+    args:
+      qtype:
+        - 65
+  - tag: black_hole
+    type: blackhole
+    args:
+      rcode: 0
+      ipv4: 127.0.0.1
+      ipv6: '::1'
+  - tag: response_cname_akamai
+    type: response_matcher
+    args:
+      cname:
+        - akamaiedge.net
+        - akadns.net
+        - edgekey.net
+  - tag: query_is_local_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:chinalist'
+  - tag: query_is_non_local_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:gfwlist'
+  - tag: query_is_cdn_cn_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:cdncn'
+  - tag: query_is_cn_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:ecscn'
+  - tag: query_is_tw_domain
+    type: query_matcher
+    args:
+      domain:
+        - 'provider:ecstw'
+  - tag: response_has_local_ip
+    type: response_matcher
+    args:
+      ip:
+        - 'provider:chinaip'
+  - tag: response_has_gfw_ip
+    type: response_matcher
+    args:
+      ip:
+        - 'provider:gfwip'
+  - tag: forward_ultradns
+    type: fast_forward
+    args:
+      upstream:
+        - addr: 'tcp://rdns1.ultradns.net'
+        - addr: 'tcp://rdns2.ultradns.net'
   - tag: forward_alidns_doh
     type: fast_forward
     args:
       upstream:
         - addr: 'https://223.6.6.6/dns-query'
+          enable_pipeline: true
   - tag: forward_dnspod_doh
     type: fast_forward
     args:
       upstream:
         - addr: 'https://120.53.53.53/dns-query'
+          enable_pipeline: true
   - tag: forward_tencentcloud
     type: fast_forward
     args:
       upstream:
         - addr: 'udp://183.60.83.19'
         - addr: 'udp://183.60.82.98'
+  - tag: forward_backup
+    type: fast_forward
+    args:
+      upstream:
+        - addr: 'tls://8.8.4.4:853'
+          enable_pipeline: true
+        - addr: 'https://208.67.220.220'
+          enable_pipeline: true
+  - tag: forward_localhost
+    type: fast_forward
+    args:
+      upstream:
+        - addr: 'udp://127.0.0.1'
+  - tag: forward_googledns
+    type: fast_forward
+    args:
+      upstream:
+        - addr: 'tcp://8.8.8.8'
+          socks5: '127.0.0.1:7890'
+          trusted: true
+          idle_timeout: 30
+          enable_pipeline: true
+          max_conns: 2
   - tag: forward_moedns
     type: forward
     args:
@@ -55,24 +194,89 @@ plugins:
       bootstrap:
         - 223.6.6.6
       timeout: 2
+  - tag: forward_gayhub
+    type: forward
+    args:
+      upstream:
+        - addr: 'https://120.55.44.44/dns-query'
+      timeout: 2
+  - tag: cn_counter
+    type: metrics_collector
+  - tag: non_cn_counter
+    type: metrics_collector
+  - tag: backup_counter
+    type: metrics_collector
   - tag: main_sequence
     type: sequence
     args:
       exec:
-        - if: query_is_ptr
-          exec:
-            - _new_empty_response
-            - _return
+        - hosts
+        - ecs_auto
         - cache
+        - if: qtype65
+          exec:
+            - black_hole
+            - _return
         - if: query_is_cn_domain
           exec:
+            - cn_counter
             - forward_tencentcloud
             - _return
-        - forward_moedns
+        - if: query_is_ptr
+          exec:
+            - black_hole
+            - _return
+        - if: query_is_tw_domain
+          exec:
+            - ecs_tw
+            - non_cn_counter
+            - forward_gayhub
+            - ttl_long
+            - _return
+        - if: >-
+            (query_is_local_domain) || (query_is_cdn_cn_domain) ||
+            (response_cname_akamai)
+          exec:
+            - cn_counter
+            - forward_tencentcloud
+            - _return
+        - if: query_is_non_local_domain
+          exec:
+            - _prefer_ipv4
+            - ecs_cn
+            - non_cn_counter
+            - forward_gayhub
+            - _return
+        - primary:
+            - _prefer_ipv4
+            - ecs_global
+            - non_cn_counter
+            - forward_gayhub
+            - ttl_short
+            - if: (response_has_local_ip) || (response_cname_akamai)
+              exec:
+                - _drop_response
+          secondary:
+            - ecs_auto
+            - backup_counter
+            - forward_dnspod_doh
+            - if: >-
+                (! response_has_local_ip) && [_response_valid_answer] ||
+                (response_has_gfw_ip)
+              exec:
+                - _prefer_ipv4
+                - ecs_cn
+                - forward_moedns
+                - ttl_long
+          fast_fallback: 600
+          always_standby: false
 servers:
   - exec: main_sequence
+    timeout: 5
     listeners:
       - protocol: udp
-        addr: 127.0.0.1:5533
+        addr: '127.0.0.1:5353'
       - protocol: tcp
-        addr: 127.0.0.1:5533
+        addr: '127.0.0.1:5353'
+api:
+  http: '0.0.0.0:9080'
