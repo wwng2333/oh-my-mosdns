@@ -1,14 +1,11 @@
 log:
   level: info
-
 data_providers:
   - tag: dmm
     file: ./dmm.txt
     auto_reload: true
-
 api:
   http: "0.0.0.0:9080"
-  
 plugins:
   - tag: cache
     type: cache
@@ -17,25 +14,24 @@ plugins:
       lazy_cache_ttl: 86400
       lazy_cache_reply_ttl: 30
       cache_everything: true
-
   - tag: query_is_dmm
     type: query_matcher
     args:
       domain:
         - "provider:dmm"
-
   - tag: forward_nfdnstop
     type: fast_forward
     args:
       upstream:
         - addr: "tcp://20.187.112.20"
-
   - tag: forward_google
     type: fast_forward
     args:
       upstream:
-        - addr: "udp://8.8.8.8"
-
+        - addr: "https://8.8.8.8/dns-query"
+        - addr: "https://8.8.4.4/dns-query"
+  - tag: dmm_counter
+    type: metrics_collector
   - tag: main_sequence
     type: sequence
     args: 
@@ -43,10 +39,10 @@ plugins:
         - cache
         - if: query_is_dmm
           exec:
+            - dmm_counter
             - forward_nfdnstop
             - _return
         - forward_google
-
 servers:
   - exec: main_sequence
     timeout: 5
@@ -55,4 +51,3 @@ servers:
         addr: "127.0.0.1:5533"
       - protocol: tcp
         addr: "127.0.0.1:5533"
-      
