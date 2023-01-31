@@ -30,6 +30,14 @@ plugins:
       upstream:
         - addr: "https://8.8.8.8/dns-query"
         - addr: "https://8.8.4.4/dns-query"
+  - tag: ecs_lax
+    type: ecs
+    args:
+      auto: false
+      ipv4: 104.149.18.203
+      ipv6: '2604:6600:0:c::2'
+      mask4: 24 
+      force_overwrite: true
   - tag: dmm_counter
     type: metrics_collector
   - tag: main_sequence
@@ -42,6 +50,7 @@ plugins:
             - dmm_counter
             - forward_nfdnstop
             - _return
+        - ecs_lax
         - forward_google
 servers:
   - exec: main_sequence
