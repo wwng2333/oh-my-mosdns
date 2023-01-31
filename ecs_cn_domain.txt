@@ -326,6 +326,12 @@ domain:douyin.com
 domain:douyinpic.com
 domain:douyincdn.com
 domain:douyinvod.com
+domain:douyinvod.xyz
 domain:idouyinvod.com
 domain:douyinstatic.com
 domain:douyinliving.com
+domain:douyinvideo.net
+domain:douyu.com
+domain:douyu.tv
+domain:douyuscdn.com
+domain:douyutv.com
