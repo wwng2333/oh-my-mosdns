@@ -65,6 +65,13 @@ plugins:
     args:
       qtype:
         - 65
+  - tag: response_cname_akamai
+    type: response_matcher
+    args:
+      cname:
+        - akamaiedge.net
+        - akadns.net
+        - edgekey.net
   - tag: query_is_local_domain
     type: query_matcher
     args:
@@ -72,10 +79,6 @@ plugins:
         - 'provider:chinalist'
         - 'provider:cdncn'
         - 'provider:ecscn'
-      cname:
-        - akamaiedge.net
-        - akadns.net
-        - edgekey.net
   - tag: response_has_local_ip
     type: response_matcher
     args:
@@ -163,7 +166,7 @@ plugins:
           exec:
             - _new_empty_response
             - _return
-        - if: query_is_local_domain
+        - if: (query_is_local_domain) || (response_cname_akamai)
           exec:
             - cn_counter
             - forward_tencentcloud
