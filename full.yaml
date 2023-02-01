@@ -1,3 +1,9 @@
+Status
+Processed
+DNS server
+https://doh.pub:443/dns-query
+Elapsed
+253 ms
 log:
   file: ./mosdns.log
   level: info
@@ -161,15 +167,15 @@ plugins:
           exec:
             - _new_empty_response
             - _return
-        - if: query_is_local_domain
-          exec:
-            - cn_alidns_counter
-            - forward_alidns_doh
-            - _return
         - if: query_is_cdn_domain
           exec:
             - cn_dnspod_counter
             - forward_dnspod_doh
+            - _return
+        - if: query_is_local_domain
+          exec:
+            - cn_alidns_counter
+            - forward_alidns_doh
             - _return
         - primary:
             - _prefer_ipv4
