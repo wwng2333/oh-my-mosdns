@@ -65,13 +65,6 @@ plugins:
     args:
       qtype:
         - 65
-  - tag: response_cname_akamai
-    type: response_matcher
-    args:
-      cname:
-        - akamaiedge.net
-        - akadns.net
-        - edgekey.net
   - tag: query_is_local_domain
     type: query_matcher
     args:
@@ -79,6 +72,10 @@ plugins:
         - 'provider:chinalist'
         - 'provider:cdncn'
         - 'provider:ecscn'
+      cname:
+        - akamaiedge.net
+        - akadns.net
+        - edgekey.net
   - tag: response_has_local_ip
     type: response_matcher
     args:
@@ -119,21 +116,23 @@ plugins:
           enable_pipeline: true
         - addr: 'tls://1.0.0.1:853'
           enable_pipeline: true
-  - tag: forward_localhost
+  - tag: forward_tailscale_udp
     type: fast_forward
     args:
       upstream:
-        - addr: 'udp://127.0.0.1'
-  - tag: forward_googledns_s5
+        - addr: 'udp://100.77.149.73:10053'
+  - tag: forward_tailscale_tcp
     type: fast_forward
     args:
       upstream:
-        - addr: 'tcp://8.8.8.8'
-          socks5: '127.0.0.1:7890'
-          trusted: true
-          idle_timeout: 30
+        - addr: 'tcp://100.77.149.73:10053'
           enable_pipeline: true
-          max_conns: 2
+  - tag: forward_clash
+    type: fast_forward
+    args:
+      upstream:
+        - addr: 'tcp://127.0.0.1:6053'
+          enable_pipeline: true
   - tag: forward_moedns
     type: forward
     args:
@@ -164,7 +163,7 @@ plugins:
           exec:
             - _new_empty_response
             - _return
-        - if: (query_is_local_domain) || (response_cname_akamai)
+        - if: query_is_local_domain
           exec:
             - cn_counter
             - forward_tencentcloud
@@ -174,9 +173,9 @@ plugins:
             - ecs_global
             - non_cn_counter
             - parallel:
-              - forward_gayhub
-              - forward_google_dot
-              - forward_cf_dot
+              - forward_tailscale_udp
+              - forward_tailscale_tcp
+              - forward_clash
             - ttl_short
             - if: (response_has_local_ip) || (response_cname_akamai)
               exec:
