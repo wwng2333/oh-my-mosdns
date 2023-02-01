@@ -1,0 +1,19 @@
+log:
+  level: info
+  file: "/tmp/mosdns.log"
+
+plugins:
+  - tag: forward_google
+    type: fast_forward
+    args:
+      upstream:
+        - addr: https://dns.alidns.com/dns-query
+          bootstrap: 223.5.5.5
+
+servers:
+  - exec: forward_google
+    listeners:
+      - protocol: udp
+        addr: 127.0.0.1:5533
+      - protocol: tcp
+        addr: 127.0.0.1:5533
