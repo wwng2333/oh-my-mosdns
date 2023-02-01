@@ -1,3 +1,9 @@
+Status
+Processed
+DNS server
+https://doh.pub:443/dns-query
+Elapsed
+253 ms
 log:
   file: ./mosdns.log
   level: info
@@ -77,6 +83,10 @@ plugins:
     args:
       domain:
         - 'provider:chinalist'
+  - tag: query_is_cdn_domain
+    type: query_matcher
+    args:
+      domain:
         - 'provider:cdncn'
         - 'provider:ecscn'
   - tag: response_has_local_ip
@@ -94,9 +104,13 @@ plugins:
     args:
       upstream:
         - addr: 'https://223.5.5.5/dns-query'
-          enable_pipeline: true
         - addr: 'https://223.6.6.6/dns-query'
-          enable_pipeline: true
+  - tag: forward_dnspod_doh
+    type: fast_forward
+    args:
+      upstream:
+        - addr: 'https://1.12.12.12/dns-query'
+        - addr: 'https://120.53.53.53/dns-query'
   - tag: forward_tencentcloud
     type: fast_forward
     args:
@@ -110,14 +124,6 @@ plugins:
         - addr: 'tls://8.8.4.4:853'
           enable_pipeline: true
         - addr: 'tls://8.8.8.8:853'
-          enable_pipeline: true
-  - tag: forward_cf_dot
-    type: fast_forward
-    args:
-      upstream:
-        - addr: 'tls://1.1.1.1:853'
-          enable_pipeline: true
-        - addr: 'tls://1.0.0.1:853'
           enable_pipeline: true
   - tag: forward_tailscale_udp
     type: fast_forward
@@ -141,16 +147,11 @@ plugins:
     args:
       upstream:
         - addr: 'https://hk-hkg.moedns.dev/dns-hk'
-      bootstrap:
-        - 223.6.6.6
+      bootstrap: 223.6.6.6
       timeout: 2
-  - tag: forward_gayhub
-    type: forward
-    args:
-      upstream:
-        - addr: 'https://120.55.44.44/dns-query'
-      timeout: 2
-  - tag: cn_counter
+  - tag: cn_alidns_counter
+    type: metrics_collector
+  - tag: cn_dnspod_counter
     type: metrics_collector
   - tag: non_cn_counter
     type: metrics_collector
@@ -166,10 +167,15 @@ plugins:
           exec:
             - _new_empty_response
             - _return
-        - if: (query_is_local_domain) || (response_cname_akamai)
+        - if: query_is_local_domain
           exec:
-            - cn_counter
-            - forward_tencentcloud
+            - cn_alidns_counter
+            - forward_alidns_doh
+            - _return
+        - if: query_is_cdn_domain
+          exec:
+            - cn_dnspod_counter
+            - forward_dnspod_doh
             - _return
         - primary:
             - _prefer_ipv4
