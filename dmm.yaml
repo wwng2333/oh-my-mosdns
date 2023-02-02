@@ -1,8 +1,8 @@
 log:
   level: info
 data_providers:
-  - tag: dmm
-    file: ./dmm.txt
+  - tag: geosite
+    file: ./geosite.dat
     auto_reload: true
 api:
   http: "0.0.0.0:9080"
@@ -14,11 +14,11 @@ plugins:
       lazy_cache_ttl: 86400
       lazy_cache_reply_ttl: 30
       cache_everything: false
-  - tag: query_is_dmm
+  - tag: query_is_jp
     type: query_matcher
     args:
       domain:
-        - "provider:dmm"
+        - "provider:geosite:netflix, dmm, dmm-ads, dmm-porn, disney, abema, hulu, niconico, tver"
   - tag: forward_nfdnstop
     type: fast_forward
     args:
