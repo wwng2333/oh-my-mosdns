@@ -105,12 +105,11 @@ plugins:
       upstream:
         - addr: 'tcp://127.0.0.1:6053'
           enable_pipeline: true
-  - tag: forward_opendns
+  - tag: forward_tunadns
     type: forward
     args:
       upstream:
-        - addr: 'https://doh.opendns.com/dns-query'
-      bootstrap: 223.6.6.6
+        - addr: 'https://101.6.6.6:8443/dns-query'
       timeout: 2
   - tag: forward_moedns
     type: forward
@@ -155,7 +154,7 @@ plugins:
           secondary:
             - ecs_auto
             - backup_counter
-            - forward_opendns
+            - forward_tunadns
             - if: >-
                 (! response_has_local_ip) && [_response_valid_answer] ||
                 (response_has_gfw_ip)
