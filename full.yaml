@@ -65,22 +65,11 @@ plugins:
     args:
       qtype:
         - 65
-  - tag: response_cname_akamai
-    type: response_matcher
-    args:
-      cname:
-        - akamaiedge.net
-        - akadns.net
-        - edgekey.net
   - tag: query_is_local_domain
     type: query_matcher
     args:
       domain:
         - 'provider:chinalist'
-  - tag: query_is_cdn_domain
-    type: query_matcher
-    args:
-      domain:
         - 'provider:cdncn'
         - 'provider:ecscn'
   - tag: response_has_local_ip
@@ -99,26 +88,6 @@ plugins:
       upstream:
         - addr: 'https://223.5.5.5/dns-query'
         - addr: 'https://223.6.6.6/dns-query'
-  - tag: forward_dnspod_doh
-    type: fast_forward
-    args:
-      upstream:
-        - addr: 'https://1.12.12.12/dns-query'
-        - addr: 'https://120.53.53.53/dns-query'
-  - tag: forward_tencentcloud
-    type: fast_forward
-    args:
-      upstream:
-        - addr: 'udp://183.60.83.19'
-        - addr: 'udp://183.60.82.98'
-  - tag: forward_google_dot
-    type: fast_forward
-    args:
-      upstream:
-        - addr: 'tls://8.8.4.4:853'
-          enable_pipeline: true
-        - addr: 'tls://8.8.8.8:853'
-          enable_pipeline: true
   - tag: forward_tailscale_udp
     type: fast_forward
     args:
@@ -136,6 +105,13 @@ plugins:
       upstream:
         - addr: 'tcp://127.0.0.1:6053'
           enable_pipeline: true
+  - tag: forward_opendns
+    type: forward
+    args:
+      upstream:
+        - addr: 'https://doh.opendns.com/dns-query'
+      bootstrap: 223.6.6.6
+      timeout: 2
   - tag: forward_moedns
     type: forward
     args:
@@ -143,11 +119,9 @@ plugins:
         - addr: 'https://hk-hkg.moedns.dev/dns-hk'
       bootstrap: 223.6.6.6
       timeout: 2
-  - tag: cn_alidns_counter
+  - tag: alidns_counter
     type: metrics_collector
-  - tag: cn_dnspod_counter
-    type: metrics_collector
-  - tag: non_cn_counter
+  - tag: google_counter
     type: metrics_collector
   - tag: backup_counter
     type: metrics_collector
@@ -161,32 +135,27 @@ plugins:
           exec:
             - _new_empty_response
             - _return
-        - if: query_is_cdn_domain
-          exec:
-            - cn_dnspod_counter
-            - forward_dnspod_doh
-            - _return
         - if: query_is_local_domain
           exec:
-            - cn_alidns_counter
+            - alidns_counter
             - forward_alidns_doh
             - _return
         - primary:
             - _prefer_ipv4
             - ecs_global
-            - non_cn_counter
+            - google_counter
             - parallel:
               - forward_tailscale_udp
               - forward_tailscale_tcp
               - forward_clash
             - ttl_short
-            - if: (response_has_local_ip) || (response_cname_akamai)
+            - if: response_has_local_ip
               exec:
                 - _drop_response
           secondary:
             - ecs_auto
             - backup_counter
-            - forward_alidns_doh
+            - forward_opendns
             - if: >-
                 (! response_has_local_ip) && [_response_valid_answer] ||
                 (response_has_gfw_ip)
