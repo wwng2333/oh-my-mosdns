@@ -1,9 +1,3 @@
-Status
-Processed
-DNS server
-https://doh.pub:443/dns-query
-Elapsed
-253 ms
 log:
   file: ./mosdns.log
   level: info
