@@ -45,7 +45,7 @@ plugins:
     args: 
       exec:
         - cache
-        - if: query_is_dmm
+        - if: query_is_jp
           exec:
             - dmm_counter
             - forward_nfdnstop
