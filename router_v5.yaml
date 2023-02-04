@@ -1,0 +1,15 @@
+log:
+  level: info
+  file: "/tmp/mosdns.log"
+
+plugins:
+  - tag: forward_alidns 
+    type: forward
+    args:
+      upstreams:
+        - addr: https://223.6.6.6/dns-query
+
+  - type: udp_server
+    args:
+      entry: forward_alidns
+      listen: 127.0.0.1:5533
