@@ -1,15 +1,13 @@
 log:
   level: info
   file: "/tmp/mosdns.log"
-
 plugins:
-  - tag: forward_alidns 
-    type: forward
+  - tag: CF_DoT_ECS
+    type: sequence
     args:
-      upstreams:
-        - addr: https://223.6.6.6/dns-query
-
+      - exec: ecs 142.251.46.0/24 2607:f8b0:4005::1/48
+      - exec: forward tls://1.1.1.1:853
   - type: udp_server
     args:
-      entry: forward_alidns
+      entry: CF_DoT_ECS
       listen: 127.0.0.1:5533
