@@ -1,10 +1,8 @@
 log:
   file: ./mosdns.log
   level: info
-
 api:
   http: "127.0.0.1:9081"
-
 plugins:
   - tag: tag_cache
     type: cache
@@ -38,12 +36,8 @@ plugins:
     type: sequence
     args:
       - matches:
-          - qtype 12 # PTR
-        exec: reject 0 # DNS-Rcode
-      - matches:
-          - qtype 65 # HTTPS
+          - qtype 12 65 # PTR HTTPS
         exec: reject 0
-      - exec: prefer_ipv4
       - exec: $tag_cache
       - matches: has_resp
         exec: accept 
