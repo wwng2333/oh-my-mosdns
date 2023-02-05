@@ -5,8 +5,8 @@ plugins:
   - tag: CF_DoT_ECS
     type: sequence
     args:
-      - exec: ecs 142.251.46.0/24 2607:f8b0:4005::1/48
-      - exec: forward tls://1.1.1.1:853
+      - exec: ecs 104.28.195.0/24 2a09:bac1:76a0:1cf0::1/48
+      - exec: forward https://1.1.1.1/dns-query
   - type: udp_server
     args:
       entry: CF_DoT_ECS
