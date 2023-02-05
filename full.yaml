@@ -1,5 +1,9 @@
 log:
+  file: ./mosdns.log
   level: info
+
+api:
+  http: "127.0.0.1:9081"
 
 plugins:
   - tag: tag_cache
@@ -9,24 +13,18 @@ plugins:
       lazy_cache_ttl: 259200
       dump_file: ./cache.dump
       dump_interval: 3600
-  - tag: cn_domain
-    type: domain_set
-    args:
-      files:
-        - "/etc/mosdns/rules/china_domain_list.txt"
-        - "/etc/mosdns/rules/cdn_domain_list.txt"
-        - "/etc/mosdns/ecs_cn_domain.txt"
   - tag: forward_alidns
     type: forward
     args:
       upstreams:
-        - tag: ali1
+        - tag: alidns_main
           addr: "https://223.5.5.5/dns-query"
-        - tag: ali2
+        - tag: alidns_backup
           addr: "https://223.6.6.6/dns-query"
   - tag: forward_google
     type: forward
     args:
+      concurrent: 3
       upstreams:
         - tag: tailscale_udp
           addr: "100.77.149.73:10053"
@@ -41,14 +39,18 @@ plugins:
     args:
       - matches:
           - qtype 12 # PTR
-          - qtype 65 # HTTPS
         exec: reject 0 # DNS-Rcode
-      - exec: $tag_cache
+      - matches:
+          - qtype 65 # HTTPS
+        exec: reject 0
       - exec: prefer_ipv4
+      - exec: $tag_cache
       - matches: has_resp
         exec: accept 
-      - matches: qname $cn_domain
-        exec: $forward_alidns     
+      - matches: qname &/etc/mosdns/rules/china_domain_list.txt &/etc/mosdns/rules/cdn_domain_list.txt &/etc/mosdns/ecs_cn_domain.txt
+        exec: $forward_alidns
+      - matches: has_resp
+        exec: accept 
       - exec: $forward_google
   - type: udp_server
     args:
