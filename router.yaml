@@ -9,8 +9,16 @@ plugins:
       upstreams:
         - addr: https://dns.alidns.com/dns-query
           bootstrap: 223.5.5.5
-
+  - tag: main
+    type: sequence
+    args:
+      - matches:
+        - "!qname domain:.lan"
+        exec: $forward_alidns
+      - matches: has_resp
+        exec: accept 
+      - exec: forward 192.168.123.1:531
   - type: udp_server
     args:
-      entry: forward_alidns
-      listen: 127.0.0.1:5533
+      entry: main
+      listen: 0.0.0.0:53
