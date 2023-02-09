@@ -7,7 +7,8 @@ plugins:
     type: forward
     args:
       upstreams:
-        - addr: https://223.6.6.6/dns-query
+        - addr: https://dns.alidns.com/dns-query
+          bootstrap: 223.5.5.5
 
   - type: udp_server
     args:
