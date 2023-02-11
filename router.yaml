@@ -14,6 +14,7 @@ plugins:
     args:
       - matches:
         - "!qname domain:.lan"
+        - "!qtype 12"
         exec: $forward_alidns
       - matches: has_resp
         exec: accept 
