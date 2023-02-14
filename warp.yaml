@@ -1,0 +1,26 @@
+log:
+  level: info
+  file: "/tmp/mosdns.log"
+plugins:
+  - tag: cfwarp 
+    type: forward
+    args:
+      upstreams:
+        - addr: tcp://1.1.1.1
+          socks5: 127.0.0.1:40000
+          enable_pipeline: true
+  - tag: main
+    type: sequence
+    args:
+      - exec: cache 1024
+      - matches: has_resp
+        exec: accept
+      - exec: $cfwarp
+  - type: udp_server
+    args:
+      entry: main
+      listen: 0.0.0.0:10053
+  - type: tcp_server
+    args:
+      entry: main
+      listen: 0.0.0.0:10053
