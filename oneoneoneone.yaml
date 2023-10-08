@@ -1,0 +1,26 @@
+log:
+  level: info
+  file: "/tmp/mosdns.log"
+api:
+  http: "0.0.0.0:9081"
+plugins:
+  - tag: cfwarp
+    type: forward
+    args:
+      upstreams:
+        - addr: https://1.1.1.1/dns-query
+          enable_http3: true
+  - type: udp_server
+    args:
+      entry: cfwarp
+      listen: 0.0.0.0:10053
+  - type: tcp_server
+    args:
+      entry: cfwarp
+      listen: 0.0.0.0:10053
+  - type: http_server
+    args:
+      entries: 
+        - path: /dns-query
+          exec: cfwarp
+      listen: 0.0.0.0:10443
