@@ -18,9 +18,3 @@ plugins:
     args:
       entry: cfwarp
       listen: 0.0.0.0:10053
-  - type: http_server
-    args:
-      entries: 
-        - path: /dns-query
-          exec: cfwarp
-      listen: 0.0.0.0:10443
