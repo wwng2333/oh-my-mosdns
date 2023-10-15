@@ -2,7 +2,7 @@ log:
   file: ./mosdns.log
   level: info
 api:
-  http: "127.0.0.1:9081"
+  http: 127.0.0.1:9081
 plugins:
   - tag: tag_cache
     type: cache
@@ -17,26 +17,42 @@ plugins:
       upstreams:
         - tag: alidns_main
           addr: "https://223.5.5.5/dns-query"
+          enable_http3: true
         - tag: alidns_backup
           addr: "https://223.6.6.6/dns-query"
-  - tag: forward_google
+          enable_http3: true
+  - tag: forward_tailscale
     type: forward
     args:
-      concurrent: 3
       upstreams:
-        - tag: tailscale_udp
-          addr: "100.77.149.73:10053"
         - tag: tailscale_tcp
-          addr: "tcp://100.77.149.73:10053"
+          addr: "tcp://100.78.77.61:10053"
           enable_pipeline: true
-        - tag: clash_tcp
-          addr: "tcp://127.0.0.1:6053"
-          enable_pipeline: true
+        - tag: tailscale_udp
+          addr: "100.78.77.61:10053"
+  - tag: forward_warp
+    type: forward
+    args:
+      upstreams:
+        - tag: clash_warp
+          addr: "https://your.cloudflare-gateway.com/dns-query"
+          dial_addr: "162.159.36.20"
+          bootstrap: "223.5.5.5"
+          socks5: "127.0.0.1:7890"
+          enable_http3: true
+  - tag: tag_fallback
+    type: "fallback"
+    args:
+      primary: forward_tailscale
+      secondary: forward_warp
+      threshold: 100
+      always_standby: true
   - tag: main
     type: sequence
     args:
       - matches:
           - qtype 12 65 # PTR HTTPS
+          - qname domain:.lan
         exec: reject 0
       - exec: $tag_cache
       - matches: has_resp
@@ -45,8 +61,19 @@ plugins:
         exec: $forward_alidns
       - matches: has_resp
         exec: accept 
-      - exec: $forward_google
+      - exec: $tag_fallback
+  - tag: alidns
+    type: sequence
+    args:
+      - exec: $tag_cache
+      - matches: has_resp
+        exec: accept 
+      - exec: $forward_alidns
   - type: udp_server
     args:
       entry: main
-      listen: 127.0.0.1:5533
+      listen: 0.0.0.0:5533
+  - type: udp_server
+    args:
+      entry: alidns
+      listen: 0.0.0.0:53
